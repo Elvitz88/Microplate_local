@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-fe-uat
+  namespace: uat
+data:
+  config.js: |
+    window.API_HOST="https://uat-labexam.betagro.com/api"
+    window.APP_ENV="uat"
+    window.AUTH_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.IMAGE_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.VISION_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.RESULTS_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.LABWARE_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.PREDICTION_SERVICE_URL="https://uat-labexam.betagro.com"
+    window.VISION_CAPTURE_SERVICE_URL="http://localhost:6407"
+    window.AUTH_PATH_PREFIX=""
+    window.IMAGE_PATH_PREFIX=""
+    window.VISION_PATH_PREFIX=""
+    window.RESULTS_PATH_PREFIX=""
+    window.LABWARE_PATH_PREFIX=""
+    window.PREDICTION_PATH_PREFIX=""
+    window.CAPTURE_PATH_PREFIX=""
+    window.WS_CAPTURE_URL="ws://localhost:6407/ws/capture"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-auth-service-uat
+  namespace: uat
+data:
+  DB_PORT: "6401"
+  BASE_URL: "https://uat-labexam.betagro.com"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  SMTP_HOST: "gc-smtps.betagro.com"
+  SMTP_PORT: "587"
+  SMTP_USER: "SMTP_labexam@betagro.com"
+  SMTP_FROM: "SMTP_labexam@betagro.com"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+  AAD_ENABLED: "true"
+  AAD_CLIENT_ID: "151b9468-e95f-483e-8750-64d0151ef0dc"
+  AAD_CLIENT_SECRET: "your-aad-client-secret"
+  AAD_AUTHORITY: "https://login.microsoftonline.com/eb1f94dc-8d25-4c67-985c-04be74c8f698"
+  AAD_REDIRECT_URI: "https://uat-labexam.betagro.com/api/v1/auth/login/aad/redirect"
+  AAD_DEFAULT_REDIRECT: "https://uat-labexam.betagro.com/capture"
+  AAD_SCOPES: "openid,profile,email"
+  AAD_ALLOWED_DOMAINS: ""
+  AAD_CERT_THUMBPRINT: ""
+  AAD_PRIVATE_KEY_PATH: ""
+  SSO_EXCHANGE_EXPIRY: "2m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-image-ingestion-service-be-uat
+  namespace: uat
+data:
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  STORAGE_BASE_PATH: "/mnt/storage"
+  SIGNED_URL_EXPIRY: "3600"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX: "2000"
+  PUBLIC_IMAGE_SERVICE_URL: "https://uat-labexam.betagro.com"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-labware-interface-uat
+  namespace: uat
+data:
+  DB_PORT: "6405"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  STORAGE_BASE_PATH: "/mnt/storage"
+  SIGNED_URL_EXPIRY: "3600"
+  RESULT_API_SERVICE_URL: "http://labware-result-api-service"
+  IMAGE_SERVICE_URL: "http://labware-image-ingestion-service"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+  # Rate limiting (high limit for internal service communication)
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX: "10000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-prediction-db-uat
+  namespace: uat
+data:
+  DB_PORT: "6406"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  RESULT_API_SERVICE_URL: "http://labware-result-api-service"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+  # Rate limiting (high limit for internal service communication)
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX: "10000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-result-api-service-uat
+  namespace: uat
+data:
+  DB_PORT: "6405"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  ENABLE_WEBSOCKET: "true"
+  PREDICTION_DB_SERVICE_URL: "http://btg-labware-prediction-db-service"
+  IMAGE_SERVICE_URL: "http://labware-image-ingestion-service"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-microplate-vision-inference-service-uat
+  namespace: uat
+data:
+  DB_PORT: "6405"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  MODEL_PATH: "/app/models/best_model/best_yolov12x_microplate_fine_tune.pt"
+  CONFIDENCE_THRESHOLD: "0.5"
+  NMS_THRESHOLD: "0.4"
+  PREDICTION_DB_SERVICE_URL: "http://btg-labware-prediction-db-service"
+  IMAGE_SERVICE_URL: "http://labware-image-ingestion-service"
+  # Public URL used by image-ingestion-service for signed URLs (need to replace with internal URL)
+  PUBLIC_IMAGE_SERVICE_URL: "https://uat-labexam.betagro.com"
+  RABBITMQ_SERVICE_HOST: "rabbitmq"
+  RABBITMQ_AMQP_PORT: "5672"
+  RABBITMQ_USER: "microplate"
+  RABBITMQ_QUEUE: "vision-inference"
+  WORKER_PREFETCH_COUNT: "2"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+  TRUST_PROXY: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-device-uat
+  namespace: uat
+data:
+  DB_PORT: "6407"
+  JWT_ISSUER: "microplate-auth-service"
+  JWT_AUDIENCE: "microplate-api"
+  WS_HEARTBEAT_INTERVAL: "30"
+  WS_MAX_CONNECTIONS: "10"
+  STATUS_CHECK_INTERVAL: "5"
+  CONNECTION_TIMEOUT: "10"
+  LOG_LEVEL: "INFO"
+  LOG_FILE: "logs/vision-capture.log"
+  CAMERA_DEVICE_ID: "0"
+  CAMERA_BACKEND: "pylon"
+  BASLER_SERIAL: "25266738"
+  BASLER_IP: "169.254.51.93"
+  ASLER_PACKET_SIZE: "8192"
+  BASLER_EXPOSURE_US: "20000"
+  BASLER_GAIN: "0"
+  CAPTURE_TIMEOUT: "30"
+  IMAGE_QUALITY: "95"
+  IMAGE_FORMAT: "JPEG"
+  CAPTURE_RESIZE_WIDTH: "1700"
+  CAPTURE_RESIZE_HEIGHT: "1200"
+  CAPTURE_PERSIST_IMAGES: "false"
+  CAPTURE_IN_MEMORY_LIMIT: "10"
+  ENABLE_CORS: "true"
+  CORS_ALLOWED_ORIGINS: "https://uat-labexam.betagro.com"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-map-rabbitmq-uat
+  namespace: uat
+data:
+  RABBITMQ_DEFAULT_USER: "microplate"
+  RABBITMQ_DEFAULT_VHOST: "/"

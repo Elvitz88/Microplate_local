@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-fe
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: btg-labware-fe
+    tags.datadoghq.com/version: version
+  name: btg-labware-fe
+  namespace: dev
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-fe
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-fe.logs: '[{"service":"btg-labware-fe","tags":["env:dev"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-fe
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: btg-labware-fe
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - image: asia-southeast1-docker.pkg.dev/app-nonprod-project/app-nonprod-ar/btg-labware-fe:dev-67c5d884494bd6efce27c96bc5928a4325c8a292
+        name: btg-labware-fe
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html/config.js
+          name: config-file
+          subPath: config.js
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+        securityContext:
+          runAsUser: 101
+          runAsGroup: 101
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+      volumes:
+      - configMap:
+          name: config-map-fe-dev
+        name: config-file

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # MinIO Retention Worker
+  minio-retention-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: microplate-minio-retention-worker
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+      - minio
+    command: ["npm", "run", "worker:retention"]
+    networks:
+      - microplate-network
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "minio-retention.worker.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  microplate-network:
+    external: true

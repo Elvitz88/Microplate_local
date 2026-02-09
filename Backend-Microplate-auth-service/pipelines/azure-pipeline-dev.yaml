@@ -1,0 +1,119 @@
+# Node.js with React
+# Build a Node.js project that uses React.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+  - dev # change to your branch
+
+variables:
+  containerRegistryConection: 'app-nonprod-registry'
+  deploymentFileName: 'authservicedev-deployment.yaml'
+  imageName: 'btg-labware-auth-service'
+  environment: 'dev'
+  pool: 'GCP-NONPRD-POOL'
+  GCP_PROJECT_ID: 'app-nonprod-project'
+  GCP_REPO: 'app-nonprod-ar'
+  updateK8sScriptFile: 'updateK8smanifest.sh'
+  containerImageRepository: 'asia-southeast1-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)/$(imageName)'
+  k8sManifestRepoUrl: 'git@ssh.dev.azure.com:v3/betagro-dev/Labware-hemagglutinatio_inhibition_test_automation/Manifest'
+  # Note: deploymentFileName is defined twice, keeping the first one.
+
+# CI
+stages:
+  # Stage: Build (Interacting with GCP starts here)
+  - stage: Build
+    displayName: Build stage
+    condition: succeeded()
+    jobs:
+      - job: Build
+        displayName: Build Job
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Source Version: $(Build.SourceVersion)"
+              commitHash=$(echo "$(Build.SourceVersion)" | cut -c1-8)
+              echo "Commit Hash (8-digit): $commitHash"
+              echo "##vso[task.setvariable variable=commitHash]$commitHash"
+            displayName: Get Git Commit Hash (8-digit)
+
+          - task: Docker@2
+            displayName: Build Docker Image
+            inputs:
+              containerRegistry: '$(containerRegistryConection)'
+              repository: '$(GCP_PROJECT_ID)/$(GCP_REPO)/$(imageName)'
+              command: 'build'
+              Dockerfile: '**/Dockerfile'
+              tags: |
+                dev-latest
+                dev-$(Build.SourceVersion)
+              arguments: '--build-arg="GIT_COMMIT_SHA=$(commitHash)"'
+
+          - task: Docker@2
+            displayName: Push Docker Image (dev-latest)
+            inputs:
+              containerRegistry: '$(containerRegistryConection)'
+              repository: '$(GCP_PROJECT_ID)/$(GCP_REPO)/$(imageName)'
+              command: 'push'
+              tags: dev-latest
+
+          - task: Docker@2
+            displayName: Push Docker Image (dev-$(Build.SourceVersion))
+            inputs:
+              containerRegistry: '$(containerRegistryConection)'
+              repository: '$(GCP_PROJECT_ID)/$(GCP_REPO)/$(imageName)'
+              command: 'push'
+              tags: dev-$(Build.SourceVersion)
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'drop'
+
+  - stage: Update
+    displayName: Update K8s Manifests
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: UpdateManifests
+        displayName: Update K8s Manifests
+        pool:
+          name: $(pool)
+        steps:
+          - checkout: self
+            displayName: 'Checkout source code'
+          
+          # FIX: Add this step to fix line endings
+          - task: Bash@3
+            displayName: 'Fix Script Line Endings'
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Fixing line endings in $(updateK8sScriptFile)..."
+                # Remove Windows carriage returns
+                sed -i 's/\r$//' $(System.DefaultWorkingDirectory)/$(updateK8sScriptFile)
+                # Make script executable
+                chmod +x $(System.DefaultWorkingDirectory)/$(updateK8sScriptFile)
+                # Verify the fix
+                echo "Verifying file..."
+                file $(System.DefaultWorkingDirectory)/$(updateK8sScriptFile)
+                echo "First 3 lines:"
+                head -3 $(System.DefaultWorkingDirectory)/$(updateK8sScriptFile)
+              workingDirectory: '$(System.DefaultWorkingDirectory)'
+          
+          - task: Bash@3
+            displayName: 'Update K8s Manifest'
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(System.DefaultWorkingDirectory)/$(updateK8sScriptFile)'
+              arguments: '$(environment) dev-$(Build.SourceVersion) $(containerImageRepository) $(k8sManifestRepoUrl) $(deploymentFileName)'
+              workingDirectory: '$(System.DefaultWorkingDirectory)'
+              # failOnStderr: true
+            env:
+              ENVIRONMENT: $(environment)
+              IMAGE_TAG: dev-$(Build.SourceVersion)
+              CONTAINER_REGISTRY: $(containerImageRepository)
+              K8S_MANIFEST_REPO: $(k8sManifestRepoUrl)
+              DEPLOYMENT_FILE_NAME: $(deploymentFileName)

@@ -1,0 +1,66 @@
+{
+  "aiEthics": {
+    "title": "AI Ethics & Responsible Use",
+    "subtitle": "This system follows Thailand AI Ethics Guidelines to ensure responsible and ethical use of AI technology",
+    "humanDecision": {
+      "title": "Human Decision Authority",
+      "intro": "AI provides analysis support only. All final decisions must be made by qualified personnel. Users are solely responsible for:",
+      "responsibilities": [
+        "Validating all AI-generated results",
+        "Making final diagnostic or operational decisions",
+        "Ensuring compliance with laboratory standards",
+        "Taking accountability for clinical outcomes"
+      ]
+    },
+    "guidelines": {
+      "title": "Thailand AI Ethics Guidelines Compliance",
+      "principles": [
+        {
+          "number": "1",
+          "title": "Human-Centric AI",
+          "description": "The system is designed to augment human expertise, not replace it. All AI outputs require human validation and oversight by qualified laboratory personnel."
+        },
+        {
+          "number": "2",
+          "title": "Transparency & Explainability",
+          "description": "The system provides detailed analysis results, confidence scores, and annotated images to enable users to understand and verify AI decisions."
+        },
+        {
+          "number": "3",
+          "title": "Fairness & Non-Discrimination",
+          "description": "The AI model is trained on diverse datasets and regularly validated to ensure consistent, unbiased analysis across different sample types and conditions."
+        },
+        {
+          "number": "4",
+          "title": "Privacy & Data Protection",
+          "description": "All data is processed securely with role-based access control. Personal and sensitive information is protected in compliance with data protection regulations."
+        },
+        {
+          "number": "5",
+          "title": "Accountability & Responsibility",
+          "description": "Complete audit trails are maintained for all analyses. Users and organizations remain accountable for all decisions made using this system."
+        }
+      ]
+    },
+    "bestPractices": {
+      "title": "Best Practices for Responsible AI Use",
+      "items": [
+        "Always verify AI results with manual inspection",
+        "Document all decision-making processes",
+        "Report any unexpected or anomalous results",
+        "Maintain professional skepticism of AI outputs",
+        "Follow standard laboratory quality control procedures",
+        "Keep abreast of system updates and limitations"
+      ]
+    },
+    "reference": {
+      "prefix": "Reference:",
+      "text": "Thailand AI Ethics Guidelines developed by the National Science and Technology Development Agency (NSTDA) and Digital Economy Promotion Agency (DEPA), Ministry of Digital Economy and Society, Thailand."
+    },
+    "loginNotice": {
+      "title": "AI-Assisted Analysis Notice",
+      "message": "This system uses AI for analysis support. Final decisions must be made by qualified personnel. Users are responsible for validating all AI-generated results before making operational decisions.",
+      "compliance": "Thailand AI Ethics Guidelines developed by the National Science and Technology Development Agency (NSTDA) and Digital Economy Promotion Agency (DEPA), Ministry of Digital Economy and Society, Thailand."
+    }
+  }
+}

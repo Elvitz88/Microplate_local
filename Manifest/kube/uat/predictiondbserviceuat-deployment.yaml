@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-prediction-db-service
+    tags.datadoghq.com/env: uat
+    tags.datadoghq.com/service: btg-labware-prediction-db-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-prediction-db-service
+  namespace: uat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-prediction-db-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-prediction-db-service.logs: '[{"service":"btg-labware-prediction-db-service","tags":["env:uat"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-prediction-db-service
+        tags.datadoghq.com/env: uat
+        tags.datadoghq.com/service: btg-labware-prediction-db-service
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: config-map-microplate-prediction-db-uat
+        - secretRef:
+            name: secrets-microplate-prediction-db-uat
+        - secretRef:
+            name: infra
+        image: asia-southeast1-docker.pkg.uat/app-nonprod-project/app-nonprod-ar/btg-labware-prediction-db-service:uat-360d72bf78c6716cf587dcf308473dffff7d2bbe
+        imagePullPolicy: Always
+        name: btg-labware-prediction-db-service
+        ports:
+        - containerPort: 6406
+          name: http
+          protocol: TCP
+        # Change resources section according to your project needed
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false

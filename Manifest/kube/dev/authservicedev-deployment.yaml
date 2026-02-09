@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-auth-service
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: btg-labware-auth-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-auth-service
+  namespace: dev
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-auth-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-auth-service.logs: '[{"service":"btg-labware-auth-service","tags":["env:dev"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-auth-service
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: btg-labware-auth-service
+        tags.datadoghq.com/version: version
+    spec:
+      initContainers:
+        - name: prisma-migration
+          image: asia-southeast1-docker.pkg.dev/app-nonprod-project/app-nonprod-ar/btg-labware-auth-service:dev-623b16907fda0c93885e400aff7a43debe282dd1
+          imagePullPolicy: Always
+          command: ["sh", "-c"]
+          args:
+            - |
+              npm run prisma:deploy
+          envFrom:
+            - configMapRef:
+                name: config-map-microplate-auth-service-dev
+            - secretRef:
+                name: infra
+            - secretRef:
+                name: secrets-microplate-auth-service-dev
+          securityContext:
+            allowPrivilegeEscalation: false
+      containers:
+        - envFrom:
+          - configMapRef:
+              name: config-map-microplate-auth-service-dev
+          - secretRef:
+              name: infra
+          - secretRef:
+              name: secrets-microplate-auth-service-dev
+          image: asia-southeast1-docker.pkg.dev/app-nonprod-project/app-nonprod-ar/btg-labware-auth-service:dev-623b16907fda0c93885e400aff7a43debe282dd1
+          imagePullPolicy: Always
+          name: btg-labware-auth-service
+          ports:
+          - containerPort: 6401
+            name: http
+            protocol: TCP
+          # Change resources section according to your project needed
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          securityContext:
+            allowPrivilegeEscalation: false

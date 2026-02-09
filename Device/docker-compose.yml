@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  vision-capture-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: microplate-vision-capture
+    ports:
+      - "${PORT:-6407}:${PORT:-6407}"
+    env_file:
+      - .env
+    environment:
+      # Server Configuration
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-6407}
+      - DEBUG=${DEBUG:-false}
+
+      # JWT Configuration (should match auth-service)
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+
+      # Camera Configuration
+      - CAMERA_DEVICE_ID=${CAMERA_DEVICE_ID:-0}
+      - CAMERA_WIDTH=${CAMERA_WIDTH:-1920}
+      - CAMERA_HEIGHT=${CAMERA_HEIGHT:-1080}
+      - CAMERA_FPS=${CAMERA_FPS:-30}
+
+      # Image Capture Settings
+      - CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-30}
+      - IMAGE_QUALITY=${IMAGE_QUALITY:-95}
+      - IMAGE_FORMAT=${IMAGE_FORMAT:-JPEG}
+
+      # File Storage
+      - CAPTURE_DIR=${CAPTURE_DIR:-captures}
+      - MAX_CAPTURE_AGE_HOURS=${MAX_CAPTURE_AGE_HOURS:-24}
+
+      # Status Monitoring
+      - STATUS_CHECK_INTERVAL=${STATUS_CHECK_INTERVAL:-5}
+      - CONNECTION_TIMEOUT=${CONNECTION_TIMEOUT:-10}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=${LOG_FILE:-logs/vision-capture.log}
+
+      # WebSocket Settings
+      - WS_HEARTBEAT_INTERVAL=${WS_HEARTBEAT_INTERVAL:-30}
+      - WS_MAX_CONNECTIONS=${WS_MAX_CONNECTIONS:-10}
+
+      # CORS Configuration
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:6410,http://localhost:3000}
+
+      # Environment for camera access
+      - DISPLAY=${DISPLAY:-:0}
+
+    volumes:
+      # Mount captures directory for persistence
+      - ./${CAPTURE_DIR:-captures}:/app/${CAPTURE_DIR:-captures}
+      # Mount logs directory for persistence
+      - ./logs:/app/logs
+    networks:
+      - microplate-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${PORT:-6407}/api/v1/capture/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Privileged mode for camera access (may be needed on some systems)
+    privileged: true
+    # Device access for camera (Linux)
+    devices:
+      - /dev/video${CAMERA_DEVICE_ID:-0}:/dev/video${CAMERA_DEVICE_ID:-0}
+
+networks:
+  microplate-network:
+    external: true
+    name: microplate-network

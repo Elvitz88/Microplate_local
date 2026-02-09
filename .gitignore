@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment files
+.env
+.env.local
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+**/storage/
+**/postgres_data/
+**/rabbitmq_data/
+
+# Logs
+*.log
+logs/
+
+# Models (large files)
+**/models/best_model/
+**/models/*.pt
+**/models/*.pth
+**/models/*.onnx

@@ -1,0 +1,12 @@
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: infra
+  namespace: uat
+spec:
+  encryptedData:
+    DATABASE_URL: AgArUvOLEh8qpZmHSzdnkAQNlcc9OH/HNvowmUXDtRPldYqaHA3iGP9K1ecAfsEFCVLi/i0X7Fjqrnbvrdq2RKWn5pJh6d8UCLSWNK9+fDhExBpLgvEORsIlD5tbpF2klibNvotxPed4gZmv6KMuuTQm9m5DFxjPMRs/bxZcCc2fPTooFLzRMtKZXagEWuhR5uKWeV28uTn5SHYJNFdDgig5lxQS1bp1SlS0g4rEGSp4j2SygFDhMgihxTJHvtWtq19/hmOEcjiXCcZaxEGBSDTMZnQV+xFpWaMd3v7GX9LBqHDvTJS7cb3kQHZONZrnetLcaZwMXB3GA3VNTvV5dOcrxTZajh+YIxjZ94cGpF3jNoKVMIK5/IGGARHk6VnUv68CVv8d8x7SlTB/9H8YD7Z1DUJTKgb9dTP77+/DXJHEYcZfrbikMa9izIvwD756Ns6eFvS2siO4D5z740S7/lVfBj8aFH9zflBFHS/l2pCzW83KMU2pmYSykzAg6w7/+i/q0YcTnCJNDMelHShEsMtQIo+qqmOmA5Gah+CqHHx8WdqMzJ42AP1memPj+ko9PjoWZWOzgPNlsrbVVt1YngEqrIZ4D/RIdYf25c7vO1OZ01UlBcGlqTWeCItrM73HWCr4OmeSG54EcpDaClm9V+ajN6wZALXKCb8KAlpw3UMvmJYOuFSgmY9BXi4kmtVQRxJC6gcLWKcjvaqFsLtTJf7UyQG5uHHcvGo7JJGR+D3GOZy7O4EOV4c7WnT5SIYSaB3WYc77WtLWB3gniZFzmKOHd8A88bLyoCh5xPH6qL4AyxGGaNUgCDxonFNQ9cAK
+  template:
+    metadata:
+      name: infra
+      namespace: uat

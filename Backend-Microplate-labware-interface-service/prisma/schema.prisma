@@ -1,0 +1,56 @@
+// Prisma schema for Labware Interface Service
+// This service provides CSV file generation from prediction results
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Put labware_interface first (owns its own schema), also read prediction_result
+  schemas  = ["labware_interface", "prediction_result", "public"]
+}
+
+// =========================
+// LABWARE INTERFACE SCHEMA
+// =========================
+
+model InterfaceFile {
+  id           String    @id @default(uuid()) @db.Uuid
+  sampleNo     String    @map("sample_no")
+  fileName     String    @map("file_name")
+  filePath     String    @map("file_path")
+  fileSize     BigInt?   @map("file_size")
+  status       String    @default("pending") // pending, generated, delivered, failed
+  generatedAt  DateTime? @map("generated_at")
+  deliveredAt  DateTime? @map("delivered_at")
+  errorMsg     String?   @map("error_msg")
+  createdBy    String?   @db.Uuid @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("interface_file")
+  @@schema("labware_interface")
+  @@index([sampleNo])
+  @@index([status])
+}
+
+// =========================
+// PUBLIC SCHEMA (Utilities)
+// =========================
+
+model HealthCheck {
+  id        String   @id @default(uuid()) @db.Uuid
+  service   String
+  status    String   // healthy, unhealthy, degraded
+  message   String?
+  timestamp DateTime @default(now())
+  
+  @@map("health_checks")
+  @@schema("public")
+  @@index([service])
+  @@index([timestamp])
+}
+
+

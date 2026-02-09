@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-device
+    tags.datadoghq.com/env: uat
+    tags.datadoghq.com/service: btg-labware-device
+    tags.datadoghq.com/version: version
+  name: btg-labware-device
+  namespace: uat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-device
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-device.logs: '[{"service":"btg-labware-device","tags":["env:uat"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-device
+        tags.datadoghq.com/env: uat
+        tags.datadoghq.com/service: btg-labware-device
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: config-map-device-uat
+        - secretRef:
+            name: infra
+        image: asia-southeast1-docker.pkg.uat/app-nonprod-project/app-nonprod-ar/btg-labware-device:uat-85563cd2998938c3a793bb861d558a30c0efab5f
+        imagePullPolicy: Always
+        name: btg-labware-device
+        ports:
+        - containerPort: 6407
+          name: http
+          protocol: TCP
+        # Change resources section according to your project needed
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false

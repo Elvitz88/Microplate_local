@@ -1,0 +1,503 @@
+networks:
+  microplate-network:
+    name: microplate-network
+    external: true
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: microplate-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-microplate}
+      # Removed scram-sha-256 for Prisma compatibility
+      TZ: Asia/Bangkok
+    ports:
+      - "35432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - microplate-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-microplate} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: microplate-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-microplate}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-microplate123}
+      RABBITMQ_DEFAULT_VHOST: /
+      TZ: Asia/Bangkok
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microplate-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ../Backend-Microplate-auth-service
+      dockerfile: Dockerfile
+    container_name: microplate-auth-service
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-auth-service/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate_auth
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-10000}
+    ports:
+      - "6401:6401"
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6401/healthz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Image Ingestion Service (PVC Storage)
+  image-ingestion:
+    build:
+      context: ../Backend-Microplate-image-ingestion-service
+      dockerfile: Dockerfile
+    image: backend-microplate-infra-image-ingestion:latest
+    container_name: microplate-image-ingestion-service
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-image-ingestion-service/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=6402
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate_image
+      - JWT_ACCESS_SECRET=NYr5g7vZIxvDja90w5UYoxIj-HxcYDyrBnKDRB9dQ-w
+      - JWT_ISSUER=microplate-auth-service
+      - JWT_AUDIENCE=microplate-api
+      - STORAGE_BASE_DIR=/mnt/storage
+      - FILE_ACCESS_SECRET=your-file-access-secret-change-in-production
+      - SIGNED_URL_EXPIRY=604800
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - PUBLIC_IMAGE_SERVICE_URL=http://localhost:6410
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10000}
+    ports:
+      - "6402:6402"
+    volumes:
+      - microplate-storage:/mnt/storage
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6402/healthz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PVC Retention Worker - ลบภาพเก่ากว่า 30 วันอัตโนมัติ (ใช้กับ local Docker เท่านั้น; บน cloud ให้ IT จัดการ)
+  pvc-retention:
+    image: backend-microplate-infra-image-ingestion:latest
+    container_name: microplate-pvc-retention
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-image-ingestion-service/.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate_image
+      - STORAGE_BASE_DIR=/mnt/storage
+      - PVC_RETENTION_DAYS=30
+      - PVC_RETENTION_CHECK_INTERVAL_MS=86400000
+    volumes:
+      - microplate-storage:/mnt/storage
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      image-ingestion:
+        condition: service_started
+    command: ["node", "dist/workers/pvc-retention.worker.js"]
+
+  # Vision Inference API Service (Python) - Fast response only
+  vision-inference-api:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile
+    container_name: microplate-vision-inference-api
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+    ports:
+      - "6403:6403"
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:6403/health >/dev/null" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Vision Inference Worker 1 - Background processing
+  vision-inference-worker-1:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile.worker
+    container_name: microplate-vision-worker-1
+    restart: unless-stopped
+    command: python worker.py worker-1
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+      - WORKER_PREFETCH_COUNT=3
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      vision-inference-api:
+        condition: service_started
+
+  # Vision Inference Worker 2 - Background processing
+  vision-inference-worker-2:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile.worker
+    container_name: microplate-vision-worker-2
+    restart: unless-stopped
+    command: python worker.py worker-2
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+      - WORKER_PREFETCH_COUNT=3
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      vision-inference-api:
+        condition: service_started
+
+  # Vision Inference Worker 3 - Background processing
+  vision-inference-worker-3:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile.worker
+    container_name: microplate-vision-worker-3
+    restart: unless-stopped
+    command: python worker.py worker-3
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+      - WORKER_PREFETCH_COUNT=3
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      vision-inference-api:
+        condition: service_started
+
+  # Vision Inference Worker 4 - Background processing
+  vision-inference-worker-4:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile.worker
+    container_name: microplate-vision-worker-4
+    restart: unless-stopped
+    command: python worker.py worker-4
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+      - WORKER_PREFETCH_COUNT=3
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      vision-inference-api:
+        condition: service_started
+
+  # Vision Inference Worker 5 - Background processing
+  vision-inference-worker-5:
+    build:
+      context: ../Backend-Microplate-vision-inference-service
+      dockerfile: Dockerfile.worker
+    container_name: microplate-vision-worker-5
+    restart: unless-stopped
+    command: python worker.py worker-5
+    env_file:
+      - ../Backend-Microplate-vision-inference-service/.env
+    environment:
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=microplate
+      - RABBITMQ_PASS=microplate123
+      - WORKER_PREFETCH_COUNT=3
+    volumes:
+      - vision-temp-files:/tmp
+      - vision-calibration-config:/app/config
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      vision-inference-api:
+        condition: service_started
+
+  # Labware Interface Service
+  labware-interface:
+    build:
+      context: ../Backend-Microplate-labware-interface-service
+      dockerfile: Dockerfile
+    container_name: microplate-labware-interface-service
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-labware-interface-service/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate_labware
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10000}
+    ports:
+      - "6405:6405"
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6405/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Result API Service (Node.js + Prisma)
+  result-api:
+    build:
+      context: ../Backend-Microplate-result-api-service
+      dockerfile: Dockerfile
+    container_name: microplate-result-api-service
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-result-api-service/.env
+    environment:
+      # Ensure container-to-container routing (do NOT use localhost inside Docker)
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate
+      - HOST=0.0.0.0
+      - PORT=6404
+      - PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+      - LABWARE_SERVICE_URL=http://microplate-labware-interface-service:6405
+      - IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+      - JWT_ACCESS_SECRET=NYr5g7vZIxvDja90w5UYoxIj-HxcYDyrBnKDRB9dQ-w
+      - JWT_ISSUER=microplate-auth-service
+      - JWT_AUDIENCE=microplate-api
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10000}
+    ports:
+      - "6404:6404"
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      prediction-db:
+        condition: service_started
+      labware-interface:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:6404/api/v1/result/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));\"" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prediction DB Service (Node.js + Prisma)
+  prediction-db:
+    build:
+      context: ../Backend-Microplate-prediction-db-service
+      dockerfile: Dockerfile
+    container_name: microplate-prediction-db-service
+    restart: unless-stopped
+    env_file:
+      - ../Backend-Microplate-prediction-db-service/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/microplate
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10000}
+    ports:
+      - "6406:6406"
+    networks:
+      - microplate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6406/api/v1/health/ready" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (React + nginx proxy to backend services)
+  frontend:
+    build:
+      context: ../Frontend
+      dockerfile: Dockerfile
+    container_name: microplate-frontend
+    restart: unless-stopped
+    ports:
+      - "6410:80"
+    volumes:
+      # Use Docker-specific nginx config that proxies to backend service names
+      - ../Frontend/nginx.docker.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - microplate-network
+    depends_on:
+      auth-service:
+        condition: service_started
+      image-ingestion:
+        condition: service_started
+      result-api:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+  # Storage volume - supports both local development and production PVC
+  # For local development: uses bind mount to ./storage directory
+  # For production/Kubernetes: uses PVC (defined in Kubernetes manifests)
+  microplate-storage:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./storage # Local storage directory for development
+      # For production with PVC, remove driver_opts and use:
+      # driver: local (or remove driver section to use Kubernetes PVC)
+
+  vision-temp-files:
+    driver: local # Shared volume for vision inference temp files
+
+  vision-calibration-config:
+    driver: local # Shared volume for calibration config persistence

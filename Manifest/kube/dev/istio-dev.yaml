@@ -1,0 +1,345 @@
+# outbound traffic to external services allowed list
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-http-services
+  namespace: dev
+spec:
+  hosts:
+    - dmsuat.betagro.com
+    - devapi.betagro.com
+    - app.datadoghq.com
+    - datadoghq.com
+    - example.com
+    - files.pythonhosted.org
+    - pypi.org
+    - huggingface.co
+    - cdn-lfs.hf.co
+    - transfer.xethub.hf.co
+    - cas-server.xethub.hf.co
+    - login.microsoftonline.com
+    - graph.microsoft.com
+    - install.datadoghq.com
+    - yum.datadoghq.com
+    - apt.datadoghq.com
+    - keys.datadoghq.com
+    - trace.agent.datadoghq.com
+    - instrumentation-telemetry-intake.datadoghq.com
+    - contimage-intake.datadoghq.com
+    - process.datadoghq.com
+    - ndm-intake.datadoghq.com
+    - snmp-traps-intake.datadoghq.com
+    - ndmflow-intake.datadoghq.com
+    - netpath-intake.datadoghq.com
+    - orchestrator.datadoghq.com
+    - contlcycle-intake.datadoghq.com
+    - intake.profile.datadoghq.com
+    - agent-intake.logs.datadoghq.com
+    - agent-http-intake.logs.datadoghq.com
+  location: MESH_EXTERNAL
+  ports:
+    - name: http
+      number: 80
+      protocol: HTTP
+    - name: https
+      number: 443
+      protocol: HTTPS
+  resolution: DNS
+---
+# allow database service entry
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: database-service
+  namespace: dev
+spec:
+  hosts:
+    - app-nonprd-db.private-dns-nonprod.btg
+  location: MESH_EXTERNAL
+  ports:
+    - name: postgres
+      number: 5432
+      protocol: TCP
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: smtp-external-services
+  namespace: dev
+spec:
+  hosts:
+    - az-smtp.betagro.com
+  location: MESH_EXTERNAL
+  ports:
+    - name: smtp
+      number: 25
+      protocol: TCP
+  resolution: DNS
+---
+# Google APIs ServiceEntry
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: google-apis
+  namespace: dev
+spec:
+  hosts:
+    - "google.com"
+    - "storage.googleapis.com"
+    - "cloudresourcemanager.googleapis.com"
+    - "pubsub.googleapis.com"
+    - "oauth2.googleapis.com"
+    - "sqladmin.googleapis.com"
+    - "iam.googleapis.com"
+    - "compute.googleapis.com"
+    - "logging.googleapis.com"
+    - "monitoring.googleapis.com"
+    - "cloudsql.googleapis.com"
+    - "container.googleapis.com"
+    - "www.googleapis.com"
+    - "gcr.io"
+    - "storage.gcr.io"
+    - "bigquery.googleapis.com"
+    - "www.gstatic.com"
+    - "us-east5-aiplatform.googleapis.com"
+    - "us-central1-aiplatform.googleapis.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+  location: MESH_EXTERNAL
+---
+# Existing Gateway for HTTP/HTTPS egress traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: external-egress-gateway
+  namespace: dev
+spec:
+  selector:
+    istio: egressgateway-hostnet
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+    - port:
+        number: 443
+        name: tls
+        protocol: TLS
+      hosts:
+        - "*"
+      tls:
+        mode: PASSTHROUGH
+---
+# NEW: Dedicated Gateway for az-smtp.betagro.com on port 25
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: az-smtp-egress-gateway # Renamed to be specific
+  namespace: dev
+spec:
+  selector:
+    istio: egressgateway-hostnet # Still targets the same underlying egress gateway deployment
+  servers:
+    - port:
+        number: 25
+        name: smtp
+        protocol: TCP
+      hosts:
+        - az-smtp.betagro.com # Only for this specific host
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: devapi-through-egress-gateway
+  namespace: dev
+spec:
+  hosts:
+    - devapi.betagro.com
+  gateways:
+    - mesh
+    - external-egress-gateway
+  http:
+    - match:
+        - gateways:
+            - mesh
+          headers:
+            host:
+              exact: devapi.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - gateways:
+            - external-egress-gateway
+      route:
+        - destination:
+            host: devapi.betagro.com
+            port:
+              number: 80
+  tls:
+    - match:
+        - gateways:
+            - mesh
+          port: 443
+          sniHosts:
+            - devapi.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 443
+    - match:
+        - gateways:
+            - external-egress-gateway
+          port: 443
+          sniHosts:
+            - devapi.betagro.com
+      route:
+        - destination:
+            host: devapi.betagro.com
+            port:
+              number: 443
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: dmsuat-through-egress-gateway
+  namespace: dev
+spec:
+  hosts:
+    - dmsuat.betagro.com
+  gateways:
+    - mesh
+    - external-egress-gateway
+  http:
+    - match:
+        - gateways:
+            - mesh
+          headers:
+            host:
+              exact: dmsuat.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - gateways:
+            - external-egress-gateway
+      route:
+        - destination:
+            host: dmsuat.betagro.com
+            port:
+              number: 80
+  tls:
+    - match:
+        - gateways:
+            - mesh
+          port: 443
+          sniHosts:
+            - dmsuat.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 443
+    - match:
+        - gateways:
+            - external-egress-gateway
+          port: 443
+          sniHosts:
+            - dmsuat.betagro.com
+      route:
+        - destination:
+            host: dmsuat.betagro.com
+            port:
+              number: 443
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: az-smtp-through-egress-gateway
+  namespace: dev
+spec:
+  hosts:
+    - az-smtp.betagro.com
+  gateways:
+    - mesh
+    - external-egress-gateway
+    - az-smtp-egress-gateway # <--- ADDED: Reference to the new dedicated gateway
+  http: # HTTP rules (for port 80)
+    - match:
+        - gateways:
+            - mesh
+          headers:
+            host:
+              exact: az-smtp.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - gateways:
+            - external-egress-gateway
+      route:
+        - destination:
+            host: az-smtp.betagro.com
+            port:
+              number: 80
+  tls: # TLS/TCP rules (for ports 443 and 25)
+    - match: # Match for 443 from mesh
+        - gateways:
+            - mesh
+          port: 443
+          sniHosts:
+            - az-smtp.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 443
+    - match: # Match for 443 from external-egress-gateway
+        - gateways:
+            - external-egress-gateway
+          port: 443
+          sniHosts:
+            - az-smtp.betagro.com
+      route:
+        - destination:
+            host: az-smtp.betagro.com
+            port:
+              number: 443
+    - match: # Match for 25 from mesh
+        - gateways:
+            - mesh
+          port: 25
+          sniHosts:
+            - az-smtp.betagro.com
+      route:
+        - destination:
+            host: istio-egressgateway-hostnet.istio-system.svc.cluster.local
+            port:
+              number: 25
+    - match: # Match for 25 from the NEW dedicated egress gateway
+        - gateways:
+            - az-smtp-egress-gateway # <--- CHANGED: Point to the new dedicated gateway
+          port: 25
+          sniHosts:
+            - az-smtp.betagro.com
+      route:
+        - destination:
+            host: az-smtp.betagro.com
+            port:
+              number: 25

@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-auth-service
+  name: labware-auth-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6401
+  selector:
+    app: btg-labware-auth-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-fe
+  name: btg-labware-fe
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: btg-labware-fe
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-image-ingestion-service
+  name: labware-image-ingestion-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6402
+  selector:
+    app: btg-labware-image-ingestion-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-interface-service
+  name: labware-interface-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6405
+  selector:
+    app: btg-labware-interface-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-prediction-db-service
+  name: btg-labware-prediction-db-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6406
+  selector:
+    app: btg-labware-prediction-db-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-result-api-service
+  name: labware-result-api-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6404
+  selector:
+    app: btg-labware-result-api-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-vision-inference-service
+  name: labware-vision-api-service
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6403
+  selector:
+    app: btg-labware-vision-inference-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: btg-labware-device
+  name: labware-device
+  namespace: dev
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 6407
+  selector:
+    app: btg-labware-device
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: dev
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: management
+  selector:
+    app: rabbitmq

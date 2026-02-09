@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  namespace: btg-boilerplate-prod
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: learning.betagro.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: reactjs
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - learning.betagro.com
+      secretName: tls-secret

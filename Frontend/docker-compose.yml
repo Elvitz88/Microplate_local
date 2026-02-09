@@ -1,0 +1,80 @@
+services:
+  microplate-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: microplate-frontend
+    ports:
+      - "${FRONTEND_PORT:-6410}:80"
+    env_file:
+      - .env
+    environment:
+      # Service URLs - Frontend เชื่อมต่อผ่าน Browser ไปยัง localhost (host machine)
+      - VITE_AUTH_SERVICE_URL=${VITE_AUTH_SERVICE_URL:-http://localhost:6401}
+      - VITE_IMAGE_SERVICE_URL=${VITE_IMAGE_SERVICE_URL:-http://localhost:6402}
+      - VITE_VISION_SERVICE_URL=${VITE_VISION_SERVICE_URL:-http://localhost:6403}
+      - VITE_RESULTS_SERVICE_URL=${VITE_RESULTS_SERVICE_URL:-http://localhost:6404}
+      - VITE_LABWARE_SERVICE_URL=${VITE_LABWARE_SERVICE_URL:-http://localhost:6405}
+      - VITE_PREDICTION_SERVICE_URL=${VITE_PREDICTION_SERVICE_URL:-http://localhost:6406}
+      - VITE_VISION_CAPTURE_SERVICE_URL=${VITE_VISION_CAPTURE_SERVICE_URL:-http://localhost:6407}
+      - VITE_MINIO_BASE_URL=${VITE_MINIO_BASE_URL:-http://localhost:9000}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:6410}
+      # Path prefixes (for Kubernetes, leave empty for Docker)
+      - VITE_AUTH_PATH_PREFIX=${VITE_AUTH_PATH_PREFIX:-}
+      - VITE_IMAGE_PATH_PREFIX=${VITE_IMAGE_PATH_PREFIX:-}
+      - VITE_VISION_PATH_PREFIX=${VITE_VISION_PATH_PREFIX:-}
+      - VITE_RESULTS_PATH_PREFIX=${VITE_RESULTS_PATH_PREFIX:-}
+      - VITE_LABWARE_PATH_PREFIX=${VITE_LABWARE_PATH_PREFIX:-}
+      - VITE_PREDICTION_PATH_PREFIX=${VITE_PREDICTION_PATH_PREFIX:-}
+      - VITE_CAPTURE_PATH_PREFIX=${VITE_CAPTURE_PATH_PREFIX:-}
+    volumes:
+      # Mount .env file สำหรับ runtime configuration
+      - ./.env:/usr/share/nginx/html/.env:ro
+    networks:
+      - microplate-network
+    # NOTE: depends_on ลบออกเพราะ backend services อยู่คนละ docker-compose file
+    #       ให้แน่ใจว่า backend services ทำงานอยู่ก่อน start frontend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - frontend
+
+  # API Gateway Proxy (optional, สำหรับรวม API endpoints ทั้งหมดไว้ที่ port เดียว)
+  # NOTE: depends_on ลบออกเพราะ backend services อยู่คนละ docker-compose file
+  #       ให้แน่ใจว่า backend services ทำงานอยู่ก่อน start API Gateway
+  microplate-api-gateway:
+    image: nginx:alpine
+    container_name: microplate-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT:-6400}:80"
+    volumes:
+      - ./proxy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - microplate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - proxy
+      - gateway
+
+networks:
+  microplate-network:
+    external: true
+    name: microplate-network
+
+volumes:
+  frontend-assets:
+    driver: local

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-interface-service
+    tags.datadoghq.com/env: uat
+    tags.datadoghq.com/service: btg-labware-interface-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-interface-service
+  namespace: uat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-interface-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-interface-service.logs: '[{"service":"btg-labware-interface-service","tags":["env:uat"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-interface-service
+        tags.datadoghq.com/env: uat
+        tags.datadoghq.com/service: btg-labware-interface-service
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: config-map-microplate-labware-interface-uat
+        - secretRef:
+            name: infra
+        - secretRef:
+            name: secrets-microplate-labware-interface-service-uat
+        image: asia-southeast1-docker.pkg.uat/app-nonprod-project/app-nonprod-ar/btg-labware-interface-service:uat-3ab37ef2ad698f7fcdfac1cc7de6ed5a734065fd
+        imagePullPolicy: Always
+        name: btg-labware-interface-service
+        ports:
+        - containerPort: 6405
+          name: http
+          protocol: TCP
+        # Change resources section according to your project needed
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false

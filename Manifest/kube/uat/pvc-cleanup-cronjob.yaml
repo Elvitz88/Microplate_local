@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pvc-cleanup
+  namespace: uat
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: pvc-cleanup
+            image: busybox:1.36
+            command: [ "/bin/sh", "-c" ]
+            args:
+            - |
+              set -eu
+              echo "Cleaning files older than 45 days in /data"
+              find /data -type f -mtime +45 -print -delete
+              find /data -mindepth 1 -type d -empty -print -delete
+            volumeMounts:
+            - name: shared-data
+              mountPath: /app/data
+          volumes:
+          - name: shared-data
+            persistentVolumeClaim:
+              claimName: pvc-labware-uat

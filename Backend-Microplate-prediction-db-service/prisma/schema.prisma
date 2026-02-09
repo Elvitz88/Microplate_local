@@ -1,0 +1,142 @@
+// This is your Prisma schema file for Vision Inference Service
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Service-owned schema first to host _prisma_migrations
+  schemas  = ["prediction_result", "public"]
+}
+
+// =========================
+// MICROPLATES SCHEMA
+// =========================
+
+model PredictionRun {
+  id                   Int       @id @default(autoincrement())
+  sampleNo             String    @map("sample_no")
+  submissionNo         String?   @map("submission_no")
+  description          String?
+  predictAt            DateTime  @default(now()) @map("predict_at")
+  annotatedImagePath   String?   @map("annotated_image_path")
+  rawImagePath         String?   @map("raw_image_path")
+  modelVersion         String?   @map("model_version")
+  status               String    @default("pending") // pending, processing, completed, failed
+  errorMsg             String?   @map("error_msg")
+  processingTimeMs     Int?      @map("processing_time_ms")
+  confidenceThreshold  Float?    @map("confidence_threshold")
+  createdBy            String?   @db.Uuid @map("created_by")
+  updatedBy            String?   @db.Uuid @map("updated_by")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  rowCounts            RowCounts[]
+  inferenceResults     InferenceResult[]
+  wellPredictions      WellPrediction[]
+  
+  @@map("prediction_run")
+  @@schema("prediction_result")
+  @@index([sampleNo])
+  @@index([predictAt])
+  @@index([status])
+}
+
+model RowCounts {
+  id        Int      @id @default(autoincrement())
+  runId     Int      @map("run_id")
+  counts    Json     @map("counts") // {"positive": 37, "negative": 59, "invalid": 0}
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  run       PredictionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  
+  @@map("row_counts")
+  @@schema("prediction_result")
+  @@index([runId])
+}
+
+model InferenceResult {
+  id        Int      @id @default(autoincrement())
+  runId     Int      @map("run_id")
+  results   Json     @map("results") // Complete analysis results
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  run       PredictionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  
+  @@map("inference_results")
+  @@schema("prediction_result")
+  @@index([runId])
+}
+
+model WellPrediction {
+  id         Int      @id @default(autoincrement())
+  runId      Int      @map("run_id")
+  wellId     String   @map("well_id") // A1, B2, etc.
+  label      String   @map("label")
+  class_     String   @map("class")
+  confidence Float    @map("confidence")
+  bbox       Json     @map("bbox") // {"xmin": 12, "ymin": 34, "xmax": 56, "ymax": 78}
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  run        PredictionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  
+  @@map("well_prediction")
+  @@schema("prediction_result")
+  @@index([runId])
+  @@index([wellId])
+  @@index([class_])
+}
+
+
+model SampleSummary {
+  sampleNo     String    @id @map("sample_no")
+  summary      Json      @map("summary") // {"distribution": {"positive": 37, "negative": 59}}
+  totalRuns    Int       @default(0) @map("total_runs")
+  lastRunAt    DateTime? @map("last_run_at")
+  lastRunId    Int?      @map("last_run_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("sample_summary")
+  @@schema("prediction_result")
+  @@index([lastRunAt])
+}
+
+
+model SystemConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("system_config")
+  @@schema("prediction_result")
+}
+
+// =========================
+// PUBLIC SCHEMA (Utilities)
+// =========================
+
+model HealthCheck {
+  id        String   @id @default(uuid()) @db.Uuid
+  service   String
+  status    String   // healthy, unhealthy, degraded
+  message   String?
+  timestamp DateTime @default(now())
+  
+  @@map("health_checks")
+  @@schema("public")
+  @@index([service])
+  @@index([timestamp])
+}

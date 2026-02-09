@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-interface-service
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: btg-labware-interface-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-interface-service
+  namespace: dev
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-interface-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-interface-service.logs: '[{"service":"btg-labware-interface-service","tags":["env:dev"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-interface-service
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: btg-labware-interface-service
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: config-map-microplate-labware-interface-dev
+        - secretRef:
+            name: infra
+        - secretRef:
+            name: secrets-microplate-labware-interface-service-dev
+        image: asia-southeast1-docker.pkg.dev/app-nonprod-project/app-nonprod-ar/btg-labware-interface-service:dev-14632a060645227a11ad8573c52406fd2bdca0b9
+        imagePullPolicy: Always
+        name: btg-labware-interface-service
+        ports:
+        - containerPort: 6405
+          name: http
+          protocol: TCP
+        # Change resources section according to your project needed
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false

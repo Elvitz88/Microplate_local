@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-ingestion-service
+  namespace: microplate
+  labels:
+    app: microplate
+    component: image-ingestion
+spec:
+  # IMPORTANT: Must be 1 replica due to PVC-RWO (ReadWriteOnce) constraint
+  replicas: 1
+  strategy:
+    type: Recreate  # Ensure pod is fully terminated before creating new one
+  selector:
+    matchLabels:
+      app: microplate
+      component: image-ingestion
+  template:
+    metadata:
+      labels:
+        app: microplate
+        component: image-ingestion
+    spec:
+      containers:
+      - name: image-ingestion
+        image: your-registry/microplate-image-ingestion:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6402
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "6402"
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: microplate-secrets
+              key: database-url
+        - name: STORAGE_BASE_DIR
+          value: "/mnt/storage"
+        - name: FILE_ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: microplate-secrets
+              key: file-access-secret
+        - name: SIGNED_URL_EXPIRY
+          value: "604800"  # 7 days in seconds
+        - name: IMAGE_SERVICE_URL
+          value: "http://image-ingestion-service:6402"
+        - name: JWT_ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: microplate-secrets
+              key: jwt-access-secret
+        volumeMounts:
+        - name: storage
+          mountPath: /mnt/storage
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 6402
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 6402
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: microplate-storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-ingestion-service
+  namespace: microplate
+  labels:
+    app: microplate
+    component: image-ingestion
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6402
+    targetPort: 6402
+    protocol: TCP
+    name: http
+  selector:
+    app: microplate
+    component: image-ingestion

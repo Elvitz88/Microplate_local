@@ -1,0 +1,47 @@
+{
+  "name": "image-ingesion-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p .",
+    "start": "yarn build && node dist/src/server.js",
+    "start:prod": "node ./dist/server.js",
+    "knip": "knip",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "db:push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "worker:retention": "node dist/workers/minio-retention.worker.js",
+    "worker:retention:dev": "tsx watch src/workers/minio-retention.worker.ts",
+    "worker:pvc-retention": "node dist/workers/pvc-retention.worker.js",
+    "worker:pvc-retention:dev": "tsx watch src/workers/pvc-retention.worker.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.894.0",
+    "@aws-sdk/s3-request-presigner": "^3.894.0",
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.2.3",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "prisma": "^5.22.0",
+    "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/morgan": "^1.9.9",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.12.12",
+    "@types/uuid": "^9.0.7",
+    "knip": "^5.24.0",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.6.3"
+  }
+}

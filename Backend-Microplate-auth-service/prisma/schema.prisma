@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "public"]
+}
+
+model User {
+  id                    String   @id @default(uuid()) @db.Uuid
+  name                  String   // Full name (matching Authentication-service-be)
+  email                 String?  @unique // Nullable for social-only users
+  username              String   @unique
+  mobileNumber          String?  @unique // Phone number
+  password              String
+  firstName             String?
+  lastName              String?
+
+  // Token fields (matching Authentication-service-be pattern)
+  token                 String?  @unique @db.Text // Access token
+  refreshToken          String?  @unique @db.Text // Refresh token
+  salt                  String?  @unique @db.Text // Secret key for token
+  resetPasswordToken    String?  @unique @db.Text
+
+  // Verification flags
+  verified              Boolean  @default(false) // General verification
+  verifiedPhone         Boolean  @default(false) // Phone verified
+  verifiedEmail         Boolean  @default(false) // Email verified
+  isActive              Boolean  @default(true)
+  emailVerified         Boolean  @default(false) // Alias for verifiedEmail
+
+  // Password security
+  forceChangePassword   Boolean  @default(false) // Force password change on first login
+  oldPasswords          String[] // Array of old password hashes
+  changePassTime        DateTime @default(now()) // Last password change time
+
+  // Account security
+  failedLoginAttempt    Int      @default(0) // Failed login counter
+  failedLoginwaitTime   DateTime? // Lockout timestamp
+
+  // Two-Factor Authentication
+  currentChallenge      String? // Current 2FA challenge
+  twoFactorAuthenticationEnabled Boolean @default(false)
+
+  // Profile
+  avatarUrl             String? // Profile picture URL from Azure AD
+
+  // Timestamps
+  lastLoginAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  roles                 UserRole[]
+  refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
+  auditLogs             AuditLog[]
+  socialUsers           SocialUser[] // Social login accounts
+  otps                  Otp[] // OTP records
+  authenticators        Authenticator[] // 2FA authenticators
+
+  @@map("users")
+  @@schema("auth")
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  permissions String[]
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       UserRole[]
+  
+  @@map("roles")
+  @@schema("auth")
+}
+
+model UserRole {
+  userId    String @db.Uuid
+  roleId    Int
+  assignedAt DateTime @default(now())
+  assignedBy String? @db.Uuid
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, roleId])
+  @@map("user_roles")
+  @@schema("auth")
+}
+
+model RefreshToken {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  token        String   @unique
+  family       String
+  deviceInfo   String?
+  ipAddress    String?
+  userAgent    String?
+  issuedAt     DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokedBy    String?  @db.Uuid
+  reused       Boolean  @default(false)
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+  @@schema("auth")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("password_reset_tokens")
+  @@schema("auth")
+}
+
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @db.Uuid
+  action      String
+  resource    String?
+  resourceId  String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+  @@schema("auth")
+}
+
+// Social login tracking (matching Authentication-service-be)
+model SocialUser {
+  id                  Int      @id @default(autoincrement())
+  userId              String   @db.Uuid
+  socialId            String   // Social provider user ID (e.g., Google ID, Facebook ID, AAD object ID)
+  socialAccountType   String   // Provider: "google", "facebook", "aad", etc.
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([socialId, socialAccountType]) // Prevent duplicate social accounts
+  @@map("social_users")
+  @@schema("auth")
+}
+
+// OTP management (matching Authentication-service-be)
+model Otp {
+  id              BigInt   @id @default(autoincrement())
+  userId          String?  @db.Uuid
+  userIdentifier  String   // Email or phone number
+  otpType         OtpType  // Type of OTP: signup, login, forgot_password
+  issueTime       DateTime @default(now())
+  token           String   @db.Text // JWT token for OTP session
+  value           String   // The actual OTP code
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+  @@schema("auth")
+}
+
+// Enum for OTP types (matching Authentication-service-be constants)
+enum OtpType {
+  SIGN_UP
+  LOGIN
+  FORGOT_PASSWORD
+  CHANGE_PHONE
+  CHANGE_EMAIL
+
+  @@schema("auth")
+}
+
+// WebAuthn authenticators for 2FA (matching Authentication-service-be)
+model Authenticator {
+  id                      Int      @id @default(autoincrement())
+  userId                  String   @db.Uuid
+  credentialID            String   @unique @db.Text // Base64 encoded
+  credentialPublicKey     String   @db.Text // Base64 encoded
+  counter                 BigInt   // Signature counter
+  credentialDeviceType    String   @db.VarChar(32) // "singleDevice" or "multiDevice"
+  credentialBackedUp      Boolean  // Whether credential is backed up
+  transports              String?  @db.VarChar(255) // CSV of transport types
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("authenticators")
+  @@schema("auth")
+}

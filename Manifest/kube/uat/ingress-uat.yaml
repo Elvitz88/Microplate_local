@@ -1,0 +1,92 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: labware-ingress
+  namespace: uat
+spec:
+  ingressClassName: nginx-private
+  rules:
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: btg-labware-fe
+            port:
+              number: 80
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-auth-service
+            port:
+              number: 6401
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/ingestion
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-image-ingestion-service
+            port:
+              number: 6402
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/interface
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-interface-service
+            port:
+              number: 6405
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/prediction
+        pathType: Prefix
+        backend:
+          service:
+            name: btg-labware-prediction-db-service
+            port:
+              number: 6406
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/result
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-result-api-service
+            port:
+              number: 6404
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/vision
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-vision-api-service
+            port:
+              number: 6403
+  - host: uat-labexam.betagro.com
+    http:
+      paths:
+      - path: /api/v1/device
+        pathType: Prefix
+        backend:
+          service:
+            name: labware-device
+            port:
+              number: 6407
+  tls:
+  - hosts:
+    - uat-labexam.betagro.com
+    secretName: star-betagro-com

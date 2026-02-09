@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: reactjs
+    tags.datadoghq.com/env: prod
+    tags.datadoghq.com/service: reactjs
+    tags.datadoghq.com/version: version
+  name: reactjs
+  namespace: btg-boilerplate-prod
+spec:
+  replicas: 2
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: reactjs
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/nodejs.logs: '[{"service":"reactjs","tags":["env:prod"]}]'
+        admission.datadoghq.com/js-lib.version: v4.16.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: reactjs
+        tags.datadoghq.com/env: prod
+        tags.datadoghq.com/service: reactjs
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+        - image: imageWithTag # e.g farmtechnonprdacr.azurecr.io/farmtech-fe:prod-latest
+          name: reactjs
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html/config.js
+              name: config-file
+              subPath: config.js
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - configMap:
+            name: config-map-prod
+          name: config-file
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: reactjs
+  name: reactjs
+  namespace: btg-boilerplate-prod
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080 # depend on the port in dockerfile
+  selector:
+    app: reactjs

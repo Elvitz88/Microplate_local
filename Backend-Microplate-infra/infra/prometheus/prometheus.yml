@@ -1,0 +1,100 @@
+# Prometheus Configuration for Microplate AI
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'microplate-dev'
+    replica: 'prometheus-1'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Auth Service
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:6401']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Image Ingestion Service
+  - job_name: 'image-ingestion-service'
+    static_configs:
+      - targets: ['image-ingestion-service:6402']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Vision Inference Service
+  - job_name: 'vision-inference-service'
+    static_configs:
+      - targets: ['vision-inference-service:6403']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Result API Service
+  - job_name: 'result-api-service'
+    static_configs:
+      - targets: ['result-api-service:6404']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Labware Interface Service
+  - job_name: 'labware-interface-service'
+    static_configs:
+      - targets: ['labware-interface-service:6405']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Vision Capture Service
+  - job_name: 'vision-capture-service'
+    static_configs:
+      - targets: ['vision-capture-service:6406']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # API Gateway
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:6400']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # Node Exporter (if running on host)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+    scrape_interval: 30s
+    scrape_timeout: 10s

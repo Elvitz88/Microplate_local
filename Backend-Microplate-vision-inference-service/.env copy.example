@@ -1,0 +1,44 @@
+# Vision Inference Service Configuration
+
+# Service Settings
+PORT=6403
+LOG_LEVEL=INFO
+
+# Model Configuration
+MODEL_VERSION=2.0
+MODEL_PATH=/app/models/best_model/best_yolov12x_microplate_v2.0.0.pt
+UPLOAD_DIR=/tmp
+YOLO_DEVICE=0
+
+# Service URLs
+PREDICTION_DB_SERVICE_URL=http://microplate-prediction-db-service:6406
+IMAGE_SERVICE_URL=http://microplate-image-ingestion-service:6402
+
+# AI Model Settings
+MAX_CONCURRENT_INFERENCES=5
+CONFIDENCE_THRESHOLD=0.5
+NMS_THRESHOLD=0.4
+ENABLE_GPU=false
+GPU_DEVICE_ID=0
+
+# Grid Configuration
+CALIBRATION_CONFIG_PATH=config/roi_calibration.json
+DEFAULT_GRID_WIDTH=1700
+DEFAULT_GRID_HEIGHT=1200
+GRID_ROWS=8
+GRID_COLS=12
+
+# RabbitMQ Configuration
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USER=microplate
+RABBITMQ_PASS=microplate123
+RABBITMQ_QUEUE=vision-inference
+
+# JWT Configuration
+JWT_ACCESS_SECRET=NYr5g7vZIxvDja90w5UYoxIj-HxcYDyrBnKDRB9dQ-w
+JWT_ISSUER=microplate-auth-service
+JWT_AUDIENCE=microplate-api
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:6410,http://localhost:3000

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-image-ingestion-service
+    tags.datadoghq.com/env: uat
+    tags.datadoghq.com/service: btg-labware-image-ingestion-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-image-ingestion-service
+  namespace: uat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-image-ingestion-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-image-ingestion-service.logs: '[{"service":"btg-labware-image-ingestion-service","tags":["env:uat"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-image-ingestion-service
+        tags.datadoghq.com/env: uat
+        tags.datadoghq.com/service: btg-labware-image-ingestion-service
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: infra
+        - secretRef:
+            name: secrets-microplate-image-ingestion-service-uat
+        - configMapRef:
+            name: config-map-microplate-image-ingestion-service-be-uat
+        image: asia-southeast1-docker.pkg.uat/app-nonprod-project/app-nonprod-ar/btg-labware-image-ingestion-service:uat-0c4a93bd61d57f7d673b4632b0659783eec46d01
+        imagePullPolicy: Always
+        name: btg-labware-image-ingestion-service
+        ports:
+        - containerPort: 6402
+          name: http
+          protocol: TCP
+        # Change resources section according to your project needed
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+        #Persistance volume
+        volumeMounts:
+        - name: shared-data
+          mountPath: /app/data
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: pvc-labware-uat

@@ -1,0 +1,594 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "pageNotFound": "Page not found"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "rememberMe": "Remember Me"
+  },
+  "capture": {
+    "title": "Capture Image",
+    "sampleNo": "Submission Number",
+    "submissionNo": "Test Number",
+    "description": "Plate NO.",
+    "captureImage": "Capture Image",
+    "uploadImage": "Upload Image",
+    "processing": "Processing...",
+    "success": "Capture successful",
+    "sampleInformation": {
+      "title": "Sample Information",
+      "sampleNumber": "Submission Number",
+      "submissionNumber": "Test Number",
+      "description": "Plate NO.",
+      "descriptionPlaceholder": "Enter plate number",
+      "barcodeInput": "Barcode Scanner Input",
+      "scanQr": "Scan QR",
+      "uploadError": "Upload failed: {{message}}"
+    },
+    "predictionResults": {
+      "statusCardTitle": "Prediction Status",
+      "status": "Status",
+      "statusUnknown": "Unknown",
+      "statusLabel": {
+        "completed": "Completed",
+        "running": "Running",
+        "failed": "Failed",
+        "noDetections": "No detections",
+        "unknown": "Unknown"
+      },
+      "running": "Running prediction...",
+      "totalWells": "Total Wells",
+      "wellsAnalyzed": "Wells Analyzed",
+      "avgConfidence": "Average Confidence",
+      "distributionTitle": "Well Distribution",
+      "distributionHeaderPosition": "Position",
+      "distributionHeaderCount": "Count",
+      "distributionRow": "Row {{row}}",
+      "distributionTotal": "Total",
+      "historyTitle": "Latest Recorded Result",
+      "historyLoading": "Loading sample history...",
+      "historyEmpty": "No historical data found. Run a prediction to populate summary.",
+      "historyStatus": "Status",
+      "historyPredictedAt": "Predicted at",
+      "historyPositive": "Positive",
+      "historyNegative": "Negative",
+      "historyAvgConfidence": "Avg Confidence",
+      "noDataTitle": "No prediction data available",
+      "noDataHint": "Upload or capture an image and run prediction to see results",
+      "panelTitle": "Prediction Results"
+    },
+    "uploadCard": {
+      "noImage": "No image selected",
+      "status": {
+        "preparing": "Preparing captured image for prediction...",
+        "ready": "Image is ready. You can run prediction now.",
+        "prompt": "Upload or capture an image to enable prediction."
+      },
+      "buttons": {
+        "upload": "Upload Image",
+        "capture": "Capture",
+        "capturing": "Capturing...",
+        "reset": "Reset",
+        "runPrediction": "Run Prediction",
+        "runPredictionRunning": "Prediction is running",
+        "runPredictionNeedSample": "Please enter Sample Number",
+        "runPredictionNeedImage": "Please upload or capture an image first",
+        "resetHint": "Clear current image and inputs",
+        "resetDisabled": "Nothing to reset"
+      }
+    },
+    "calibration": {
+      "start": "Start Calibration Mode",
+      "save": "Save Calibration",
+      "saving": "Saving...",
+      "resetConfig": "Reset Calibration",
+      "resetGridButton": "Reset grid to equal spacing",
+      "requireImage": "Please upload or capture an image before calibrating",
+      "instructionsTitle": "How to adjust the grid",
+      "instructions": {
+        "line1": "• Drag the blue corner handles to resize the bounding box.",
+        "line2": "• Drag the blue handles on vertical lines (13 lines) to adjust column positions.",
+        "line3": "• Drag the blue handles on horizontal lines (9 lines) to adjust row positions.",
+        "line4": "• Line order is locked from left→right and top→bottom automatically."
+      },
+      "tip": "Tip: Zoom the browser or drag lines along the inner edge of each well for best accuracy, then press “Save Calibration”.",
+      "infoHint": "Drag the 8x12 grid to cover every well. The outer frame should align with the microplate border so predictions stay aligned.",
+      "infoMessageDefault": "Drag the corners and grid lines to match the microplate, then press “Save Calibration”.",
+      "status": {
+        "boundsAdjusted": "Adjusted grid bounds. Remember to press “Save Calibration”.",
+        "columnsAdjusted": "Adjusted vertical lines. Remember to press “Save Calibration”.",
+        "rowsAdjusted": "Adjusted horizontal lines. Remember to press “Save Calibration”.",
+        "gridReset": "Grid reset to equal spacing.",
+        "saveSuccess": "Calibration saved successfully. Future captures will use this grid.",
+        "saveInvalid": "Please adjust the frame and grid lines before saving.",
+        "saveFailed": "Unable to save calibration: {{error}}",
+        "cleared": "Calibration reset. Future images will use the default grid.",
+        "clearFailed": "Unable to clear calibration: {{error}}"
+      },
+      "tooltips": {
+        "corner": "Drag to adjust this corner",
+        "column": "Drag to adjust vertical line {{index}}",
+        "row": "Drag to adjust horizontal line {{index}}"
+      }
+    },
+    "resultsPanel": {
+      "predictionFailed": "Prediction failed: {{message}}",
+      "loading": "Loading results...",
+      "latestTitle": "Latest Results",
+      "status": "Status",
+      "totalWells": "Total Wells",
+      "positive": "Positive",
+      "negative": "Negative",
+      "confidence": "Confidence",
+      "pressEnter": "Press Enter to load sample results",
+      "historyEmpty": "No recent scans in this session",
+      "historyTip": "Captured images will appear here",
+      "sessionHistory": "Recent Scans",
+      "statusQueued": "Queued",
+      "statusSubmitted": "Submitted",
+      "statusFailed": "Failed"
+    }
+  },
+  "results": {
+    "title": "Results",
+    "sampleNo": "Sample Number",
+    "runId": "Run ID",
+    "confidence": "Confidence",
+    "positive": "Positive",
+    "negative": "Negative",
+    "viewDetails": "View Details"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications"
+  },
+  "navbar": {
+    "brand": {
+      "name": "HAIlytics",
+      "tagline": "Analytics-first HI"
+    },
+    "links": {
+      "dashboard": "Dashboard",
+      "results": "Results",
+      "userGuide": "User Guide"
+    },
+    "actions": {
+      "search": "Search"
+    },
+    "search": {
+      "placeholder": "Search samples, results, logs...",
+      "searching": "Searching...",
+      "start": "Start typing to search...",
+      "noResults": "No results found for \"{{query}}\""
+    },
+    "notifications": {
+      "title": "Notifications",
+      "markAll": "Mark all as read",
+      "clearAll": "Clear all",
+      "empty": "No notifications",
+      "viewAll": "View all notifications",
+      "confirmClear": "Are you sure you want to clear all notifications?",
+      "markAsRead": "Mark as read",
+      "delete": "Delete"
+    },
+    "profile": {
+      "defaultName": "User Profile",
+      "defaultEmail": "user@example.com",
+      "profileLink": "Profile",
+      "settingsLink": "Settings",
+      "logout": "Logout"
+    }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "subtitle": "Customize your application preferences and security settings",
+    "messages": {
+      "saveSuccess": "Settings saved successfully",
+      "saveError": "Failed to save settings",
+      "passwordRequired": "Please fill in all password fields",
+      "passwordMismatch": "New passwords do not match",
+      "passwordSuccess": "Password changed successfully",
+      "passwordError": "Failed to change password",
+      "deleteConfirm": "Are you sure you want to delete your account? This action cannot be undone.",
+      "deleteNotImplemented": "Account deletion is not implemented in this demo"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "themeLabel": "Theme",
+      "options": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "items": {
+        "email": {
+          "title": "Email Notifications",
+          "description": "Receive notifications via email"
+        },
+        "push": {
+          "title": "Push Notifications",
+          "description": "Receive push notifications"
+        },
+        "desktop": {
+          "title": "Desktop Notifications",
+          "description": "Show desktop notifications"
+        }
+      }
+    },
+    "privacy": {
+      "title": "Privacy & Security",
+      "profileVisibility": {
+        "label": "Profile Visibility",
+        "options": {
+          "public": "Public",
+          "private": "Private"
+        }
+      },
+      "showEmail": {
+        "title": "Show Email",
+        "description": "Make your email visible to other users"
+      },
+      "twoFactor": {
+        "title": "Two-Factor Authentication",
+        "description": "Add an extra layer of security"
+      }
+    },
+    "data": {
+      "title": "Data Management",
+      "autoBackup": {
+        "title": "Auto Backup",
+        "description": "Automatically backup your data"
+      },
+      "dataRetention": {
+        "label": "Data Retention (days)"
+      },
+      "exportFormat": {
+        "label": "Export Format",
+        "options": {
+          "json": "JSON",
+          "csv": "CSV",
+          "pdf": "PDF"
+        }
+      }
+    },
+    "password": {
+      "title": "Change Password",
+      "current": "Current password",
+      "new": "New password",
+      "button": "Change Password",
+      "loading": "Changing..."
+    },
+    "dataActions": {
+      "title": "Data Actions",
+      "export": "Export Data",
+      "save": "Save All Settings",
+      "saveLoading": "Saving...",
+      "delete": "Delete Account",
+      "exportMessage": "Your data has been exported successfully"
+    }
+  },
+  "userGuide": {
+    "back": "Back",
+    "title": "User Guide",
+    "subtitle": "Detailed instructions for using the HAllytics system",
+    "tabs": {
+      "guide": "Guide",
+      "features": "Key Features",
+      "troubleshooting": "Troubleshooting",
+      "ethics": "AI Ethics"
+    },
+    "sectionHeaders": {
+      "steps": "Steps",
+      "tips": "Tips",
+      "warnings": "Warnings"
+    },
+    "guideSections": [
+      {
+        "id": "overview",
+        "icon": "dashboard",
+        "title": "HAllytics System Overview",
+        "description": "AI-powered microplate analytics for quality and quantity assessment",
+        "steps": [
+          "AI models analyze microplate images automatically",
+          "Upload or capture images directly from connected cameras",
+          "View analysis results in intuitive tables and charts",
+          "Generate interface files for labware systems",
+          "Manage samples and historical predictions",
+          "Monitor camera connection status in real time"
+        ],
+        "tips": [
+          "Ensure images are sharp and evenly lit",
+          "Position the microplate correctly under the camera",
+          "Fill in sample metadata before running predictions"
+        ]
+      },
+      {
+        "id": "dashboard",
+        "icon": "dashboard",
+        "title": "Dashboard",
+        "description": "Upload images and start new predictions",
+        "steps": [
+          "Enter the Submission Number (required)",
+          "Enter the Test Number (required)",
+          "Enter the Plate No. (optional)",
+          "Scan a QR code or input data manually",
+          "Upload or capture a microplate image",
+          "Check camera status before capturing",
+          "Press \"Capture\" to take a new image",
+          "Press \"Run Prediction\" to start analysis"
+        ],
+        "tips": [
+          "Use the QR code scanner for accuracy and speed",
+          "Ensure the camera status shows ready before capturing",
+          "Review your inputs before running predictions",
+          "Wait for the analysis to complete before leaving the page",
+          "Refresh the camera status if it appears offline"
+        ],
+        "warnings": [
+          "Submission Number and Test Number are required",
+          "Only upload supported image formats (JPG, PNG, etc.)",
+          "Confirm the camera is connected and ready",
+          "Contact the administrator if the camera fails repeatedly"
+        ]
+      },
+      {
+        "id": "results",
+        "icon": "science",
+        "title": "Results",
+        "description": "Inspect detailed prediction outcomes and statistics",
+        "steps": [
+          "Select a sample to review results",
+          "Review the overall distribution summary",
+          "Inspect individual analysis runs",
+          "Compare original and annotated images",
+          "Generate labware interface files",
+          "Download CSV summaries"
+        ],
+        "tips": [
+          "Click images to view them in full size",
+          "Use the interface button to generate CSV files",
+          "Verify totals in each summary table"
+        ]
+      },
+      {
+        "id": "camera-status",
+        "icon": "camera",
+        "title": "Camera Status",
+        "description": "Monitor and troubleshoot camera connectivity",
+        "steps": [
+          "Watch the system logs bar for camera updates",
+          "Check the status indicator beside Capture",
+          "Refresh the connection if the status is stale",
+          "Note the timestamp of the last health check",
+          "Review status messages for guidance"
+        ],
+        "tips": [
+          "\"Camera Ready\" means you can capture immediately",
+          "\"Camera Unavailable\" means you should verify connections",
+          "\"Capturing...\" indicates the camera is in progress",
+          "\"Checking...\" shows the system is validating the connection"
+        ],
+        "warnings": [
+          "If the camera is offline, inspect the Vision Capture Service",
+          "Do not close the browser while capturing",
+          "Contact support if connectivity issues persist"
+        ]
+      },
+      {
+        "id": "notifications",
+        "icon": "notifications",
+        "title": "Notifications",
+        "description": "Stay informed about system activities",
+        "steps": [
+          "Open the bell icon to view notifications",
+          "Click a notification for full details",
+          "Mark items as read when reviewed",
+          "Remove notifications you no longer need",
+          "Use \"View all\" for the full history"
+        ],
+        "tips": [
+          "Red badges show unread notifications",
+          "Green indicators signal success",
+          "Yellow indicators highlight warnings",
+          "Red indicators flag errors"
+        ]
+      },
+      {
+        "id": "profile",
+        "icon": "person",
+        "title": "Profile",
+        "description": "Manage personal information and account settings",
+        "steps": [
+          "Review your profile details",
+          "Update personal information",
+          "Change your password regularly",
+          "Adjust account preferences"
+        ],
+        "tips": [
+          "Keep your profile information current",
+          "Use strong, unique passwords",
+          "Monitor your email for important updates"
+        ]
+      },
+      {
+        "id": "settings",
+        "icon": "settings",
+        "title": "Settings",
+        "description": "Adjust system preferences and localization",
+        "steps": [
+          "Switch between light, dark, and system themes",
+          "Choose your preferred language",
+          "Configure notification preferences",
+          "Fine-tune additional system settings"
+        ],
+        "tips": [
+          "Pick a theme that matches your environment",
+          "Balance notification volume with your workflow",
+          "Save your changes to apply them"
+        ]
+      }
+    ],
+    "features": [
+      {
+        "id": "qrScanner",
+        "icon": "qr",
+        "title": "QR Code Scanner",
+        "description": "Scan sample codes to auto-fill metadata",
+        "color": "blue"
+      },
+      {
+        "id": "imageUpload",
+        "icon": "upload",
+        "title": "Image Upload",
+        "description": "Upload microplate images from local files",
+        "color": "green"
+      },
+      {
+        "id": "cameraCapture",
+        "icon": "camera",
+        "title": "Camera Capture",
+        "description": "Capture images directly from a connected camera",
+        "color": "indigo"
+      },
+      {
+        "id": "aiAnalysis",
+        "icon": "science",
+        "title": "AI Analysis",
+        "description": "Accurate microplate analysis powered by AI",
+        "color": "purple"
+      },
+      {
+        "id": "dataVisualization",
+        "icon": "table",
+        "title": "Data Visualization",
+        "description": "Display insights with tables and charts",
+        "color": "orange"
+      },
+      {
+        "id": "exportData",
+        "icon": "download",
+        "title": "Export Data",
+        "description": "Generate CSV files for labware systems",
+        "color": "teal"
+      },
+      {
+        "id": "realtimeNotifications",
+        "icon": "notifications",
+        "title": "Real-time Notifications",
+        "description": "Receive live status updates and alerts",
+        "color": "red"
+      },
+      {
+        "id": "cameraStatus",
+        "icon": "cameraOff",
+        "title": "Camera Status Monitor",
+        "description": "Track camera availability in real time",
+        "color": "cyan"
+      }
+    ],
+    "troubleshooting": {
+      "title": "Common issues and how to fix them",
+      "sections": [
+        {
+          "id": "imageNotShowing",
+          "color": "red",
+          "title": "Image not displaying",
+          "description": "If results images fail to render",
+          "items": [
+            "Check your internet connection",
+            "Refresh the page",
+            "Verify the uploaded image is valid"
+          ]
+        },
+        {
+          "id": "predictionSlow",
+          "color": "yellow",
+          "title": "Prediction takes too long",
+          "description": "If inference time seems excessive",
+          "items": [
+            "Inspect the image file size",
+            "Allow the system to finish processing",
+            "Try a lower-resolution image"
+          ]
+        },
+        {
+          "id": "csvDownload",
+          "color": "blue",
+          "title": "Unable to download CSV",
+          "description": "If interface CSV files fail to download",
+          "items": [
+            "Review your browser download settings",
+            "Try another browser",
+            "Confirm you have download permissions"
+          ]
+        },
+        {
+          "id": "incorrectData",
+          "color": "green",
+          "title": "Incorrect data",
+          "description": "If displayed values look wrong",
+          "items": [
+            "Verify the inputs on the dashboard",
+            "Run the prediction again",
+            "Check the image quality"
+          ]
+        },
+        {
+          "id": "cameraUnavailable",
+          "color": "purple",
+          "title": "Camera unavailable",
+          "description": "If the camera shows unavailable or checking",
+          "items": [
+            "Inspect the camera connection to the system",
+            "Refresh the connection status",
+            "Confirm the Vision Capture Service is running",
+            "Use file upload as a fallback",
+            "Contact support if the issue persists"
+          ]
+        },
+        {
+          "id": "captureDisabled",
+          "color": "orange",
+          "title": "Capture button disabled",
+          "description": "If the capture button stays greyed out",
+          "items": [
+            "Confirm the camera status is ready",
+            "Wait for the connection check to complete",
+            "Make sure Sample and Submission numbers are filled",
+            "Refresh the page"
+          ]
+        }
+      ],
+      "cta": {
+        "title": "Need more help?",
+        "description": "If you cannot resolve the issue, please contact our support team.",
+        "primary": "Contact Support",
+        "secondary": "Send Feedback"
+      }
+    }
+  }
+}

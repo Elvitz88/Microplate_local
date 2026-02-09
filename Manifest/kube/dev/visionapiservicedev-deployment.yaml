@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: btg-labware-vision-inference-service
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: btg-labware-vision-inference-service
+    tags.datadoghq.com/version: version
+  name: btg-labware-vision-inference-service
+  namespace: dev
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: btg-labware-vision-inference-service
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/btg-labware-vision-inference-service.logs: '[{"service":"btg-labware-vision-inference-service","tags":["env:dev"]}]'
+        admission.datadoghq.com/js-lib.version: v5.28.0
+      labels:
+        admission.datadoghq.com/enabled: "true"
+        app: btg-labware-vision-inference-service
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: btg-labware-vision-inference-service
+        tags.datadoghq.com/version: version
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: config-map-microplate-vision-inference-service-dev
+        - secretRef:
+            name: infra
+        - secretRef:
+            name: secrets-microplate-vision-inference-service-dev
+        image: asia-southeast1-docker.pkg.dev/app-nonprod-project/app-nonprod-ar/btg-labware-vision-api-service:dev-c42e5fede8199de2f9d318da2d1b8269b58087be
+        imagePullPolicy: Always
+        name: btg-labware-vision-inference-service
+        ports:
+        - containerPort: 6403
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "1024Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
