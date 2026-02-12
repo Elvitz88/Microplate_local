@@ -238,86 +238,83 @@ export class ResultServiceImpl implements ResultService {
     const { page, limit, sortBy = 'createdAt', sortOrder = 'desc', filters = {} } = options;
 
     try {
-      
-      const predictionResponse = await axios.get(`${this.predictionDbServiceUrl}/api/v1/prediction`, {
-        params: {
-          page,
-          limit,
-          sortBy,
-          sortOrder,
-          ...(filters.search && { submissionNo: filters.search }),
-          ...(filters.status && { status: filters.status }),
-          ...(filters.dateFrom && { startDate: filters.dateFrom }),
-          ...(filters.dateTo && { endDate: filters.dateTo }),
-        },
-      });
+      // Query the pre-calculated SampleSummary table directly
+      // This ensures correct aggregated distribution across ALL runs for each sample
+      const where: any = {};
 
-      if (!predictionResponse.data.success) {
-        throw new Error('Failed to fetch prediction runs');
+      if (filters.search) {
+        where.sampleNo = { contains: filters.search, mode: 'insensitive' };
+      }
+      if (filters.dateFrom || filters.dateTo) {
+        where.lastRunAt = {};
+        if (filters.dateFrom) where.lastRunAt.gte = new Date(filters.dateFrom);
+        if (filters.dateTo) where.lastRunAt.lte = new Date(filters.dateTo);
       }
 
-      const predictionData = predictionResponse.data.data;
-      const runs = predictionData.runs || [];
-      const pagination = predictionData.pagination || {};
+      // Map sortBy to SampleSummary fields
+      const validSortFields = ['createdAt', 'updatedAt', 'lastRunAt', 'sampleNo'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'updatedAt';
+      const skip = (page - 1) * limit;
 
-      
-      const sampleMap = new Map<string, any>();
-      
-      for (const run of runs) {
-        const sampleNo = run.sampleNo;
-        if (!sampleMap.has(sampleNo)) {
-          sampleMap.set(sampleNo, {
-            sampleNo,
-            summary: { distribution: {} },
-            totalRuns: 0,
-            lastRunAt: null,
-            lastRunId: null,
-            createdAt: run.createdAt,
-            updatedAt: run.updatedAt,
-          });
-        }
-        
-        const sample = sampleMap.get(sampleNo);
-        sample.totalRuns++;
-        
-        
-        if (!sample.lastRunAt || new Date(run.createdAt) > new Date(sample.lastRunAt)) {
-          sample.lastRunAt = run.createdAt;
-          sample.lastRunId = run.id;
-        }
-        
-        
-        if (run.inferenceResults && run.inferenceResults.length > 0) {
-          const inferenceResult = run.inferenceResults[0];
-          if (inferenceResult.results && inferenceResult.results.distribution) {
-            const dist = inferenceResult.results.distribution;
-            for (const [key, value] of Object.entries(dist)) {
-              if (key !== 'total') {
-                sample.summary.distribution[key] = (sample.summary.distribution[key] || 0) + (value as number);
+      const [summaries, total] = await Promise.all([
+        this.prisma.sampleSummary.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { [sortField]: sortOrder },
+        }),
+        this.prisma.sampleSummary.count({ where }),
+      ]);
+
+      // Fetch submissionNo and description from latest run for each sample
+      const data: SampleSummary[] = await Promise.all(
+        summaries.map(async (s) => {
+          let submissionNo: string | undefined;
+          let description: string | undefined;
+          if (s.lastRunId) {
+            try {
+              const latestRunResp = await axios.get(
+                `${this.predictionDbServiceUrl}/api/v1/prediction/${s.lastRunId}`
+              );
+              if (latestRunResp.data?.success && latestRunResp.data?.data) {
+                submissionNo = latestRunResp.data.data.submissionNo || undefined;
+                description = latestRunResp.data.data.description || undefined;
               }
+            } catch {
+              // Ignore - submissionNo is optional display data
             }
           }
-        }
-      }
+          return {
+            sampleNo: s.sampleNo,
+            submissionNo,
+            description,
+            summary: s.summary as any,
+            totalRuns: s.totalRuns,
+            lastRunAt: s.lastRunAt,
+            lastRunId: s.lastRunId,
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt,
+          };
+        })
+      );
 
-      const data = Array.from(sampleMap.values());
-
+      const totalPages = Math.ceil(total / limit);
       const result: PaginatedResult<SampleSummary> = {
         data,
         pagination: {
-          page: pagination.page || page,
-          limit: pagination.limit || limit,
-          total: pagination.total || data.length,
-          totalPages: pagination.totalPages || Math.ceil((pagination.total || data.length) / limit),
-          hasNext: pagination.hasNext || false,
-          hasPrev: pagination.hasPrev || false,
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
         },
       };
 
-      logger.info('Samples retrieved from prediction-db-service', { page, limit, total: result.pagination.total, filters });
+      logger.info('Samples retrieved from SampleSummary table', { page, limit, total, filters });
       return result;
     } catch (error) {
-      logger.error('Failed to get samples from prediction-db-service:', { error: String(error) });
+      logger.error('Failed to get samples:', { error: String(error) });
       throw new Error('Failed to fetch samples');
     }
   }

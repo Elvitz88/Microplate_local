@@ -6,7 +6,6 @@ import {
   MdExpandMore,
   MdExpandLess,
   MdRefresh,
-  MdFilterList,
   MdChevronLeft,
   MdChevronRight,
   MdBarChart,
@@ -17,6 +16,7 @@ import {
   MdZoomOut,
   MdEdit,
   MdCheck,
+  MdSort,
 } from 'react-icons/md';
 import { resultsService } from '../services/results.service';
 import { resultsServiceDirect } from '../services/results.service.direct';
@@ -53,20 +53,29 @@ export default function Results() {
   const [editingRunId, setEditingRunId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [sortBy, setSortBy] = useState<string>('lastRunAt');
+  const [sortOrder, setSortOrder] = useState<string>('desc');
 
   const limit = 15;
 
+  const sortOptions = [
+    { label: 'Latest Result', value: 'lastRunAt:desc' },
+    { label: 'Oldest Result', value: 'lastRunAt:asc' },
+    { label: 'Recently Edited', value: 'updatedAt:desc' },
+    { label: 'Sample A-Z', value: 'sampleNo:asc' },
+    { label: 'Sample Z-A', value: 'sampleNo:desc' },
+  ];
+
 
   const { data: samplesData, isLoading: isLoadingSamples, refetch } = useQuery({
-    queryKey: ['samples', currentPage, searchTerm],
+    queryKey: ['samples', currentPage, searchTerm, sortBy, sortOrder],
     queryFn: async () => {
-      logger.debug('🔍 Fetching samples with params:', { currentPage, limit, searchTerm });
-      logger.debug('🔍 Now using resultsApi (port 6404) - result-api-service gets data from prediction_result.sample_summary');
+      logger.debug('🔍 Fetching samples with params:', { currentPage, limit, searchTerm, sortBy, sortOrder });
       const response = await resultsService.getSamples(
         currentPage,
         limit,
-        'updatedAt',
-        'desc',
+        sortBy,
+        sortOrder,
         searchTerm || undefined
       );
       logger.debug('🔍 Raw samples API response:', response);
@@ -584,10 +593,23 @@ export default function Results() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-              <MdFilterList className="h-4 w-4" />
-              Filters
-            </button>
+            <div className="relative">
+              <MdSort className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <select
+                value={`${sortBy}:${sortOrder}`}
+                onChange={(e) => {
+                  const [newSortBy, newSortOrder] = e.target.value.split(':');
+                  setSortBy(newSortBy);
+                  setSortOrder(newSortOrder);
+                  setCurrentPage(1);
+                }}
+                className="pl-9 pr-8 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer"
+              >
+                {sortOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </Card>
@@ -648,7 +670,7 @@ export default function Results() {
               let totalRunsWithData = 0;
               
               expandedData.runs.forEach((run: any) => {
-                const actualRunId = run.id;
+                const actualRunId = run.id || run.runId;
                 const inferenceResult = expandedData.inferenceResults.get(actualRunId);
                 const runDistribution = inferenceResult?.results?.distribution || {};
                 
